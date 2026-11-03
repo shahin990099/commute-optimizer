@@ -34,4 +34,41 @@ class LocalBeamSearchSolver(LocalSearchSolver):
         - Treating this as K independent, non-communicating searches.
         """
         # TODO: Implement Local Beam Search
-        raise NotImplementedError("Implement solve() in algorithms/beam_search.py")
+        problem = self.problem
+        beam = list(dict.fromkeys(problem.generate_initial_state() for _ in range(self.beam_width)))
+
+        best_state = min(beam, key=problem.evaluate)
+        best_cost = problem.evaluate(best_state)
+        self.history.append(best_cost)
+
+        for _ in range(self.max_iterations):
+            pool = {}
+            for state in beam:
+                for neighbor in get_neighbors(state, problem):
+                    pool[neighbor] = problem.evaluate(neighbor)
+            if not pool:
+                break
+
+            ranked = sorted(pool, key=pool.get)
+            new_beam = []
+            path_count = {}
+            for candidate in ranked:
+                if len(new_beam) == self.beam_width:
+                    break
+                if path_count.get(candidate.path, 0) >= 2:
+                    continue
+                new_beam.append(candidate)
+                path_count[candidate.path] = path_count.get(candidate.path, 0) + 1
+
+            step_best_cost = pool[ranked[0]]
+            self.history.append(step_best_cost)
+
+            if step_best_cost < best_cost:
+                best_cost = step_best_cost
+                best_state = ranked[0]
+                beam = new_beam
+            else:
+                break
+
+        return best_state, best_cost
+        # raise NotImplementedError("Implement solve() in algorithms/beam_search.py")
